@@ -2,13 +2,13 @@
 #include <iostream>
 #include <string>
 
-#include "schifra/schifra_galois_field.hpp"
-#include "schifra/schifra_galois_field_polynomial.hpp"
-#include "schifra/schifra_sequential_root_generator_polynomial_creator.hpp"
-#include "schifra/schifra_reed_solomon_encoder.hpp"
-#include "schifra/schifra_reed_solomon_decoder.hpp"
-#include "schifra/schifra_reed_solomon_block.hpp"
-#include "schifra/schifra_error_processes.hpp"
+#include "lib/schifra/include/schifra_galois_field.hpp"
+#include "lib/schifra/include/schifra_galois_field_polynomial.hpp"
+#include "lib/schifra/include/schifra_sequential_root_generator_polynomial_creator.hpp"
+#include "lib/schifra/include/schifra_reed_solomon_encoder.hpp"
+#include "lib/schifra/include/schifra_reed_solomon_decoder.hpp"
+#include "lib/schifra/include/schifra_reed_solomon_block.hpp"
+#include "lib/schifra/include/schifra_error_processes.hpp"
 
 union b8 {
 	unsigned long long w;

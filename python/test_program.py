@@ -94,6 +94,8 @@ def createmesspacket(packno) : # packno in range 0..255 with value 2 for strandI
             packet[i,strandIDbytes:strandIDbytes+messbytesperstrand] = ptext
             plaintext[i*messbytesperstrand:(i+1)*messbytesperstrand] = ptext
     return (packet,plaintext)
+
+
 def protectmesspacket(packetin) : # fills in the RS check strands
     packet = packetin.copy()
     regin = zeros(strandsperpacket,dtype=uint8)
@@ -119,6 +121,8 @@ def messtodna(mpacket) :
             #n.b. this can violate the output constraints (very slightly at end of strand)
         dpacket[i,:len(dna)] = dna
     return dpacket
+
+
 def dnatomess(dnapacket) :
     # HEDGES decode strands of DNA (assumed ordered by packet and ID number) to a packet
     baddecodes = 0
@@ -160,6 +164,8 @@ def correctmesspacket(packetin,epacket) :
         for i in range(strandsperpacket) :
             packet[i,((j+i)% messbytesperstrand)+strandIDbytes] = decoded[i]
     return (packet,tot_detect,tot_uncorrect,max_detect,max_uncorrect,toterrcodes)
+
+
 def extractplaintext(cpacket) :
     # extract plaintext from a corrected packet
     plaintext = zeros(strandsperpacketmessage*messbytesperstrand,dtype=uint8)

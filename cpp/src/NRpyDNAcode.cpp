@@ -991,4 +991,3 @@ MODINIT_FUNC PyInit_NRpyDNAcode(void)
 
     return m;
 }
-

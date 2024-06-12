@@ -120,7 +120,7 @@ const char* NRpyCharP(PyObject *ob) {
 	else NRpyException("NRpyCharP argument is not a string.");
 	return NULL;
 }
-const char* NRpyCharP(char *name, char *dict = NULL) {
+const char* NRpyCharP(const char *name, const char *dict = NULL) {
 	return NRpyCharP(NRpyGetByName(name,dict));
 }
 

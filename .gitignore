@@ -6,3 +6,4 @@ cpp/src/NRpyDNAcode.o
 cpp/src/NRpyRS.o
 .vscode
 .debug
+.journal

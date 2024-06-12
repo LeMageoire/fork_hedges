@@ -1,0 +1,121 @@
+Help on module NRpyDNAcode:
+
+NAME
+    NRpyDNAcode
+
+FILE
+    /usr/local/lib/python2.7/site-packages/NRpyDNAcode.so
+
+FUNCTIONS
+    createerrors(...)
+        new_int8_dna_array = createerrors(int8_dna_array, subrate, delrate, insrate)
+        create Poisson random errors at specified rates
+    
+    decode(...)
+        (errcode, int8_message_array, nhypo, score, offset, seq) = decode(int8_dna_array[, nmessbits])
+        decode a message optionally limited to nmessbits message bits
+    
+    decode_fulldata(...)
+        (errcode,nhypo,messagebit,seq,offset,score,hypo,predi,prevbits,salt,newsalt) =
+        decode_fulldata(codetext[, nmessbits])
+    
+    encode(...)
+        int8_dna_array = encode(int8_message_array [, strandlen])
+        encode a message with runout to strandlen
+    
+    encodestring(...)
+        int8_dna_array = encodestring(message_as_string)
+        encode a message
+    
+    getdnaconstraints(...)
+        (DNAWINDOW, MAXGC, MINGC, MAXRUN) = getdnaconstraints()
+        get current values of DNA constraints
+    
+    getparams(...)
+        (NSALT, MAXSEQ, NSTAK, HLIMIT) = getparams()
+        get current values of parameters
+    
+    getscores(...)
+        (reward,substitution,deletion,insertion,dither) = getscores()
+        get current scoring parameters
+    
+    getversion(...)
+        version = getversion()
+        get version number as a float
+    
+    hashint(...)
+        hashedint = hashint(int)
+        hash an integer by same algorithm as used throughout
+    
+    makegoodsense(...)
+        new_int8_dna_array = makegoodsense(leftprimer, int8_dna_array)
+        return array or its reverse-complement, whichever agrees best with leftprimer
+    
+    minstrandlen(...)
+        minstrandlength = minstrandlen(nbytes)
+        get min length of DNA to encode nbytes (then use longer!)
+    
+    releaseall(...)
+        errcode = releaseall()
+        release memory grabbed by decode_fulldata
+    
+    restorednaconstraints(...)
+        restorednaconstraints()
+        restore DNA constraints to default values
+    
+    restoreparams(...)
+        restoreparams()
+         restore parameters to default values
+        NB! must be followed by setcoderate
+    
+    restorescores(...)
+        restorescores()
+        restore scoring parameters to default values
+    
+    revcomp(...)
+        revcomp(int8_dna_array)
+        reverse-complement a dna array in place
+    
+    setcoderate(...)
+        errorcode = setcoderate(number, leftprimer, rightprimer)
+        set coderate to one of six values for number=1..6 (0.75, 0.6, 0.5, 0.333, 0.25, 0.166)
+    
+    setdnaconstraints(...)
+        errorcode = setdnaconstraints(DNAWINDOW, MAXGC, MINGC, MAXRUN)
+         set new DNA constraint values
+        DNAWINDOW=0 for no constraints
+    
+    setparams(...)
+        errorcode = setparams(NSALT, MAXSEQ, NSTAK, HLIMIT)
+         set new parameter values
+        NB! must be followed by setcoderate
+    
+    setscores(...)
+        errorcode = setscores(reward,substitution,deletion,insertion,dither)
+        set new scoring parameters
+    
+    tryallcoderates(...)
+        maxoffsets = tryallcoderates(hlimit, maxseq, int8_dna_array, leftprimer, rightprimer)
+        maxoffsets[i] is maximum offset achieved in trying coderate i (in 1..6) limited by hlimit
+
+
+Help on module NRpyRS:
+
+NAME
+    NRpyRS
+
+FILE
+    /usr/local/lib/python2.7/site-packages/NRpyRS.so
+
+FUNCTIONS
+    makeerasures(...)
+        (newcodetext,locations) = makeerasures(codetext,nerasures)
+    
+    makeerrors(...)
+        newcodetext = makeerrors(codetext,nerrors)
+    
+    rsdecode(...)
+        (decoded, errs_detected, errs_corrected, err_code, recoverable) = rsdecode(uint8_array_length_255[, VecInt erasure_locations])
+    
+    rsencode(...)
+        codetext = rsencode(uint8_array_length_255)

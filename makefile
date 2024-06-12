@@ -1,6 +1,8 @@
 CC=g++
 CFLAGS=-fPIC -Wall -Wextra -O2
-LDFLAGS=-dynamiclib
+#LDFLAGS=-dynamiclib
+LIB_PATH=$(shell python3 -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))")
+LDFLAGS=-shared -L $(LIB_PATH) -lpython3.9
 RM=rm -f
 CPP_DIR=cpp
 INCLUDE_PATH=$(shell python3 -c "from sysconfig import get_paths; print(get_paths()['include'])")
@@ -8,7 +10,7 @@ INCLUDE_PATH=$(shell python3 -c "from sysconfig import get_paths; print(get_path
 CFLAGS += -I$(INCLUDE_PATH)
 CFLAGS += -I$(CPP_DIR)/include
 CFLAGS += -I$(CPP_DIR)/lib/schifra/include
-CFLAGS += -I /Users/mguyot/Documents/fork_hedges/venv/lib/python3.12/site-packages/numpy/core/include 
+CFLAGS += -I ./venv/lib/python3.9/site-packages/numpy/core/include 
 TARGET_LIB1=$(CPP_DIR)/NRpyDNAcode.so
 TARGET_LIB2=$(CPP_DIR)/NRpyRS.so
 SRCS1=$(CPP_DIR)/src/NRpyDNAcode.cpp
@@ -17,7 +19,7 @@ OBJS1=$(SRCS1:.cpp=.o)
 OBJS2=$(SRCS2:.cpp=.o)
 
 .PHONY: all
-all: ${TARGET_LIB2} ${TARGET_LIB1} 
+all: ${TARGET_LIB2} ${TARGET_LIB1}
 
 $(TARGET_LIB1): $(OBJS1)
 	$(CC) $(LDFLAGS) -o $@ $^

@@ -107,6 +107,14 @@ static PyMethodDef NRpyRS_methods[] = {
 	{ NULL, NULL, 0, NULL }
 };
 
+static struct PyModuleDef nrpyrs_module = {
+    PyModuleDef_HEAD_INIT,
+    "NRpyRS",   /* name of module */
+    NULL,       /* module documentation, may be NULL */
+    -1,         /* size of per-interpreter state of the module,
+                   or -1 if the module keeps state in global variables. */
+    NRpyRS_methods
+};
 
 PyMODINIT_FUNC PyInit_NRpyRS(void) {
     PyObject* m;

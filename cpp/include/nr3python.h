@@ -49,6 +49,8 @@ static const double NaN = numeric_limits<double>::quiet_NaN();
 // Python glue Part I starts here (Part II at end of file)
 
 PyObject* NRpyException(const char *str, int die=1, int val=0) {
+	(void)die;
+	(void)val;
 	PySys_WriteStderr("%s", "ERROR: ");
 	PySys_WriteStderr("%s", str);
 	PySys_WriteStderr("%s", "\n");
@@ -113,12 +115,12 @@ double NRpyDoub(char *name, char *dict = NULL) {
 }
 
 // type char* (string)
-char* NRpyCharP(PyObject *ob) {
-	if (PyUnicode_Check(ob)) return PyUnicode_AsString(ob);
+const char* NRpyCharP(PyObject *ob) {
+	if (PyUnicode_Check(ob)) return PyUnicode_AsUTF8(ob);
 	else NRpyException("NRpyCharP argument is not a string.");
 	return NULL;
 }
-char* NRpyCharP(char *name, char *dict = NULL) {
+const char* NRpyCharP(char *name, char *dict = NULL) {
 	return NRpyCharP(NRpyGetByName(name,dict));
 }
 
@@ -222,27 +224,48 @@ void NRpySend(T &a, char *name, char *dict=NULL) {
 }
 
 // templated check of a PyObject's type (used in initpyvec and initpymat below)
-template <class T> inline int NRpyTypeOK(PyObject *a) {return 0;}
-template <> inline int NRpyTypeOK<double>(PyObject *a) {return PyArray_ISFLOAT(a);}
-template <> inline int NRpyTypeOK<int>(PyObject *a) {
-	return PyArray_ISINTEGER(a) && (PyArray_TYPE(a) == NPY_INT32);
+template <class T> inline int NRpyTypeOK(PyObject *a) {(void)a; return 0;}
+template <> inline int NRpyTypeOK<double>(PyObject *a) {
+    if (!PyArray_Check(a)) {
+        PyErr_SetString(PyExc_TypeError, "Expected a NumPy array");
+        return 0;
+    }
+    return PyArray_ISFLOAT((PyArrayObject*)a);
 }
-template <> inline int NRpyTypeOK<char>(PyObject *a) {return PyArray_ISINTEGER(a);}
-template <> inline int NRpyTypeOK<unsigned char>(PyObject *a) {return PyArray_ISINTEGER(a);}
-
-
+	//{return PyArray_ISFLOAT(a);}
+template <> inline int NRpyTypeOK<int>(PyObject *a){
+    if (!PyArray_Check(a)) {
+        PyErr_SetString(PyExc_TypeError, "Expected a NumPy array");
+        return 0;
+    }
+    return PyArray_ISINTEGER((PyArrayObject*)a) && (PyArray_TYPE((PyArrayObject*)a) == NPY_INT32);
+}
+template <> inline int NRpyTypeOK<char>(PyObject *a) {
+    if (!PyArray_Check(a)) {
+        PyErr_SetString(PyExc_TypeError, "Expected a NumPy array");
+        return 0;
+    }
+    return PyArray_ISINTEGER((PyArrayObject*)a) && (PyArray_TYPE((PyArrayObject*)a) == NPY_BYTE);
+}
+template <> inline int NRpyTypeOK<unsigned char>(PyObject *a) {
+    if (!PyArray_Check(a)) {
+        PyErr_SetString(PyExc_TypeError, "Expected a NumPy array");
+        return 0;
+    }
+    return PyArray_ISINTEGER((PyArrayObject*)a) && (PyArray_TYPE((PyArrayObject*)a) == NPY_UBYTE);
+}
 // templated return a PyObject's type (used in NRpyObject on vector and matrix args)
-template <class T> inline int NRpyDataType() {return PyArray_INT;}
-template <> inline int NRpyDataType<double>() {return PyArray_DOUBLE;}
-template <> inline int NRpyDataType<int>() {return PyArray_INT;}
-template <> inline int NRpyDataType<char>() {return PyArray_BYTE;}
-template <> inline int NRpyDataType<unsigned char>() {return PyArray_UBYTE;}
+template <class T> inline int NRpyDataType() {return NPY_INT;}
+template <> inline int NRpyDataType<double>() {return NPY_DOUBLE;}
+template <> inline int NRpyDataType<int>() {return NPY_INT32;}
+template <> inline int NRpyDataType<char>() {return NPY_BYTE;}
+template <> inline int NRpyDataType<unsigned char>() {return NPY_UBYTE;}
 
 // tempated cast a PyObject's type (used in NRpyPyFunction for return type)
-template <class T>  T NRpyCast(PyObject *a) {return (T*)NULL; }
+template <class T>  T NRpyCast(PyObject *a) {(void)a; return (T*)NULL; }
 template <> double NRpyCast<double>(PyObject *a) {return NRpyDoub(a);}
 template <> int NRpyCast<int>(PyObject *a) {return NRpyInt(a);}
-template <> char* NRpyCast<char*>(PyObject *a) {return NRpyCharP(a);}
+template <> const char* NRpyCast<const char*>(PyObject *a) {return NRpyCharP(a);}
 
 // end Python glue Part I  (see Part II at end of file)
 
@@ -362,16 +385,36 @@ NRvector<T>::NRvector(int n) : nn(n), ownsdata(1), v(n>0 ? (T*)PyMem_Malloc(n*si
 
 template <class T>
 void NRvector<T>::initpyvec(PyObject *a) {
-	ownsdata = 0;
-	pyident = a;
-	if (! PyArray_CheckExact(a)) NRpyException("PyObject is not an Array in NRvector constructor.");
-	if (! PyArray_ISCARRAY_RO(a)) NRpyException("Python Array must be contiguous (e.g., not strided).");
-	if (! NRpyTypeOK<T>(a)) NRpyException("Python Array type does not agree with NRvector type.");
-	int i, ndim = PyArray_NDIM(a);
-	nn = 1;
-	for (i=0;i<ndim;i++) nn *= int(PyArray_DIMS(a)[i]);
-	v = (nn>0 ? (T*)PyArray_DATA(a) : NULL);
+    ownsdata = 0;
+    pyident = a;
+
+    // Ensure the input is an exact NumPy array
+    if (!PyArray_CheckExact(a)) {
+        PyErr_SetString(PyExc_TypeError, "PyObject is not an Array in NRvector constructor.");
+        return; // Early return to prevent further processing
+    }
+
+    // Check if the array is a C-style contiguous read-only array
+    if (!PyArray_ISCARRAY_RO((PyArrayObject*)a)) {
+        PyErr_SetString(PyExc_ValueError, "Python Array must be contiguous (e.g., not strided).");
+        return; // Early return to prevent further processing
+    }
+
+    // Check if the array's data type matches the expected type
+    if (!NRpyTypeOK<T>(a)) {
+        PyErr_SetString(PyExc_TypeError, "Python Array type does not agree with NRvector type.");
+        return; // Early return to prevent further processing
+    }
+
+    // Determine the total number of elements in the array
+    int i, ndim = PyArray_NDIM((PyArrayObject*)a);
+    nn = 1;
+    for (i = 0; i < ndim; i++) {
+        nn *= int(PyArray_DIMS((PyArrayObject*)a)[i]);
+    }
+    v = (nn > 0 ? (T*)PyArray_DATA((PyArrayObject*)a) : NULL);
 }
+
 template <class T> NRvector<T>::NRvector(PyObject *a) {
 	initpyvec(a);
 }
@@ -540,20 +583,49 @@ NRmatrix<T>::NRmatrix(int n, int m) : nn(n), mm(m), ownsdata(1), v(n>0 ? new T*[
 
 template <class T>
 void NRmatrix<T>::initpymat(PyObject *a) {
-	pyident = a;
-	ownsdata = 0;
-	if (! PyArray_CheckExact(a)) NRpyException("PyObject is not an Array in NRmatrix constructor.");
-	if (! PyArray_ISCARRAY_RO(a)) NRpyException("Python Array must be contiguous (e.g., not strided).");
-	if (PyArray_NDIM(a) != 2) NRpyException("Python Array must be 2-dim in NRmatrix constructor.");
-	if (! NRpyTypeOK<T>(a)) NRpyException("Python Array type does not agree with NRmatrix type.");
-	int i, nel;
-	nn = int(PyArray_DIMS(a)[0]);
-	mm = int(PyArray_DIMS(a)[1]);
-	nel = mm*nn;
-	v = (nn>0 ? new T*[nn] : NULL);
-	if (v) v[0] = nel>0 ? (T*)PyArray_DATA(a) : NULL;
-	for (i=1;i<nn;i++) v[i] = v[i-1] + mm;
+    pyident = a;
+    ownsdata = 0;
+
+    // Ensure the input is an exact NumPy array
+    if (!PyArray_CheckExact(a)) {
+        PyErr_SetString(PyExc_TypeError, "PyObject is not an Array in NRmatrix constructor.");
+        return; // Early return to prevent further processing
+    }
+
+    // Check if the array is a C-style contiguous read-only array
+    if (!PyArray_ISCARRAY_RO((PyArrayObject*)a)) {
+        PyErr_SetString(PyExc_ValueError, "Python Array must be contiguous (e.g., not strided).");
+        return; // Early return to prevent further processing
+    }
+
+    // Ensure the array is 2-dimensional
+    if (PyArray_NDIM((PyArrayObject*)a) != 2) {
+        PyErr_SetString(PyExc_ValueError, "Python Array must be 2-dim in NRmatrix constructor.");
+        return; // Early return to prevent further processing
+    }
+
+    // Check if the array's data type matches the expected type
+    if (!NRpyTypeOK<T>(a)) {
+        PyErr_SetString(PyExc_TypeError, "Python Array type does not agree with NRmatrix type.");
+        return; // Early return to prevent further processing
+    }
+
+    // Obtain dimensions of the array
+    int i, nel;
+    nn = int(PyArray_DIMS((PyArrayObject*)a)[0]);
+    mm = int(PyArray_DIMS((PyArrayObject*)a)[1]);
+    nel = mm * nn;
+
+    // Allocate memory for the matrix
+    v = (nn > 0 ? new T*[nn] : NULL);
+    if (v && nel > 0) {
+        v[0] = (T*)PyArray_DATA((PyArrayObject*)a);
+        for (i = 1; i < nn; i++) {
+            v[i] = v[i - 1] + mm;
+        }
+    }
 }
+
 template <class T> NRmatrix<T>::NRmatrix(PyObject *a) {
 	initpymat(a);
 }
@@ -876,39 +948,56 @@ turn_on_floating_exceptions yes_turn_on_floating_exceptions;
 // Python glue Part II begins here
 
 // NRpyObject for vector and matrix
-template<class T> PyObject* NRpyObject(NRvector<T> &a) {
-	if (a.ownsdata == 0) {Py_INCREF(a.pyident); return a.pyident;}
-	npy_int nd = 1;
-	npy_intp dims[1];
-	dims[0] = a.size();
-	PyObject *thing;
-	if (dims[0] > 0) {
-		thing = PyArray_SimpleNewFromData(nd, dims, NRpyDataType<T>(), &a[0]);
-	} else {
-		thing = PyArray_SimpleNew(nd, dims, NRpyDataType<T>()); // zero size
-	}
-	PyArray_FLAGS(thing) |= NPY_OWNDATA;
-	a.ownsdata = 0;
-	a.pyident = thing;
-	return thing;
-}
-template<class T> PyObject* NRpyObject(NRmatrix<T> &a) {
-	if (a.ownsdata == 0) {Py_INCREF(a.pyident); return a.pyident;}
-	npy_int nd = 2;
-	npy_intp dims[2];
-	dims[0] = a.nrows(); dims[1] = a.ncols();
-	PyObject *thing;
-	if (dims[0]*dims[1] > 0) {
-		thing = PyArray_SimpleNewFromData(nd, dims, NRpyDataType<T>(), &a[0][0]);
-	} else {
-		thing = PyArray_SimpleNew(nd, dims, NRpyDataType<T>()); // zero size
-	}
-	PyArray_FLAGS(thing) |= NPY_OWNDATA;
-	a.ownsdata = 0;
-	a.pyident = thing;
-	return thing;
+template<class T>
+PyObject* NRpyObject(NRvector<T> &a) {
+    if (a.ownsdata == 0) {
+        Py_INCREF(a.pyident);  // Increase ref count to prevent deallocation
+        return a.pyident;
+    }
+
+    npy_intp dims[1] = {a.size()};
+    PyObject *thing = PyArray_SimpleNewFromData(1, dims, NRpyDataType<T>(), &a[0]);
+    if (!thing) return PyErr_NoMemory();
+
+    // Ensure the numpy array owns the data
+    if (!PyArray_CHKFLAGS((PyArrayObject*)thing, NPY_ARRAY_OWNDATA)) {
+        PyArray_ENABLEFLAGS((PyArrayObject*)thing, NPY_ARRAY_OWNDATA);
+    }
+
+    a.ownsdata = 0;
+    a.pyident = thing;
+    return thing;
 }
 
+
+template<class T>
+PyObject* NRpyObject(NRmatrix<T> &a) {
+    if (a.ownsdata == 0) {
+        Py_INCREF(a.pyident);  // Increment the reference count to keep the object alive
+        return a.pyident;
+    }
+    
+    npy_intp dims[2] = {a.nrows(), a.ncols()};
+    PyObject *thing;
+    
+    // Create a NumPy array that points to the data or create an empty one if no data is present
+    if (dims[0] * dims[1] > 0) {
+        thing = PyArray_SimpleNewFromData(2, dims, NRpyDataType<T>(), &a[0][0]);
+        if (!thing) return PyErr_NoMemory();  // Handling memory allocation failure
+    } else {
+        thing = PyArray_SimpleNew(2, dims, NRpyDataType<T>());
+        if (!thing) return PyErr_NoMemory();  // Handling memory allocation failure
+    }
+
+    // Ensure the NumPy array owns the data, using the correct API function
+    if (!PyArray_CHKFLAGS((PyArrayObject*)thing, NPY_ARRAY_OWNDATA)) {
+        PyArray_ENABLEFLAGS((PyArrayObject*)thing, NPY_ARRAY_OWNDATA);
+    }
+
+    a.ownsdata = 0;  // Mark that the NRmatrix does not own the data anymore
+    a.pyident = thing;  // Update the Python identifier to the new array
+    return thing;
+}
 // PyObject(tuple) must go down here because it uses an NRvector
 PyObject* NRpyTuple(PyObject *first, ...) {
 	int MAXARGS=1024, i, nargs=1;

@@ -8,7 +8,7 @@ INCLUDE_PATH=$(shell python3 -c "from sysconfig import get_paths; print(get_path
 CFLAGS += -I$(INCLUDE_PATH)
 CFLAGS += -I$(CPP_DIR)/include
 CFLAGS += -I$(CPP_DIR)/lib/schifra/include
-CFLAGS += -I /Users/mguyot/Documents/fork_hedges/venv/lib/python3.12/site-packages/numpy/core/include
+CFLAGS += -I /Users/mguyot/Documents/fork_hedges/venv/lib/python3.12/site-packages/numpy/core/include 
 TARGET_LIB1=$(CPP_DIR)/NRpyDNAcode.so
 TARGET_LIB2=$(CPP_DIR)/NRpyRS.so
 SRCS1=$(CPP_DIR)/src/NRpyDNAcode.cpp
@@ -17,7 +17,7 @@ OBJS1=$(SRCS1:.cpp=.o)
 OBJS2=$(SRCS2:.cpp=.o)
 
 .PHONY: all
-all: ${TARGET_LIB1} ${TARGET_LIB2}
+all: ${TARGET_LIB2} ${TARGET_LIB1} 
 
 $(TARGET_LIB1): $(OBJS1)
 	$(CC) $(LDFLAGS) -o $@ $^

@@ -28,8 +28,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
-#include <deque>
 #include <vector>
+#include <deque>
 
 #include "schifra_reed_solomon_block.hpp"
 #include "schifra_fileio.hpp"

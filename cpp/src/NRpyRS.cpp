@@ -94,6 +94,7 @@ static PyObject* makeerrors(PyObject *self, PyObject *pyargs) {
 	return NRpyObject(codeword);
 }
 
+
 // standard boilerplate 
 static PyMethodDef NRpyRS_methods[] = {
 	{ "rsencode", rsencode, METH_VARARGS,
@@ -106,24 +107,7 @@ static PyMethodDef NRpyRS_methods[] = {
 	"newcodetext = makeerrors(codetext,nerrors)" },
 	{ NULL, NULL, 0, NULL }
 };
-
-static struct PyModuleDef nrpyrs_module = {
-    PyModuleDef_HEAD_INIT,
-    "NRpyRS",   /* name of module */
-    NULL,       /* module documentation, may be NULL */
-    -1,         /* size of per-interpreter state of the module,
-                   or -1 if the module keeps state in global variables. */
-    NRpyRS_methods
-};
-
-PyMODINIT_FUNC PyInit_NRpyRS(void) {
-    PyObject* m;
-
-    import_array();  // Initialize NumPy API
-    if (PyErr_Occurred()) return NULL;  // Check for errors in NumPy initialization
-
-    m = PyModule_Create(&nrpyrs_module);
-    if (m == NULL) return NULL;
-
-    return m;
+PyMODINIT_FUNC initNRpyRS(void) {
+	import_array();
+	Py_InitModule("NRpyRS", NRpyRS_methods);
 }

@@ -1,8 +1,8 @@
 CC=g++
-CFLAGS=-fPIC -Wall -Wextra -O2
+CFLAGS=-fPIC -Wall -Wextra -O2 -g -fsanitize=address
 #LDFLAGS=-dynamiclib
 LIB_PATH=$(shell python3 -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))")
-LDFLAGS=-shared -L $(LIB_PATH) -lpython3.9
+LDFLAGS=-shared -L $(LIB_PATH) -lpython3.9 -fsanitize=address
 RM=rm -f
 CPP_DIR=cpp
 INCLUDE_PATH=$(shell python3 -c "from sysconfig import get_paths; print(get_paths()['include'])")

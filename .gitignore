@@ -2,3 +2,7 @@
 .tmp
 WindowsC++Compile/.vs/NRpyDNAcode/v16/.suo
 venv
+cpp/src/NRpyDNAcode.o
+cpp/src/NRpyRS.o
+.vscode
+.debug

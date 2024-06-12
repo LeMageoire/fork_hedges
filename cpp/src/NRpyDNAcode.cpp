@@ -969,6 +969,8 @@ static PyMethodDef NRpyDNAcode_methods[] = {
 	{ NULL, NULL, 0, NULL }
 };
 
+
+
 #if 0
 PyMODINIT_FUNC initNRpyDNAcode(void) { // N.B. must rename to agree with module name
 	import_array();
@@ -976,18 +978,58 @@ PyMODINIT_FUNC initNRpyDNAcode(void) { // N.B. must rename to agree with module 
 }
 #endif
 
+// Wrapper function for primerscore
+static PyObject* py_primerscore(PyObject* self, PyObject* args) {
+    const char* ain;
+    PyObject* py_bin;
+    int binlen;
 
-static struct Py project;
+    if (!PyArg_ParseTuple(args, "sOi", &ain, &py_bin, &binlen)) {
+        return NULL;
+    }
 
-MODINIT_FUNC PyInit_NRpyDNAcode(void)
+    // Convert PyObject to VecUchar
+    VecUchar bin;
+    // TODO: Add code to convert py_bin to bin
+
+    Doub result = primerscore(ain, bin, binlen);
+
+    return PyFloat_FromDouble(result);
+}
+
+#if 0
+static PyMethodDef NRpyDNAcodeMethods[] = {
+    {"primerscore", py_primerscore, METH_VARARGS, "Calculate primer score"},
+	{"getparams", getparams, METH_NOARGS, "Get code parameters"},
+	{"makegoodsense", makegoodsense, METH_VARARGS, "Make good sense"},
+	{"setparams", setparams, METH_VARARGS, "Set code parameters"},
+	{"setcoderate", setcoderate, METH_VARARGS, "set code rate" },
+	{"setdnaconstraints", setdnaconstraints, METH_VARARGS, "set dnaconstraints"},
+	{"getscores", getscores, METH_VARARGS, "getscores"},
+	{"restorescores", restorescores, METH_VARARGS, "restorescores"}
+	
+
+    // Add other methods here
+    {NULL, NULL, 0, NULL} // Sentinel
+};
+#endif
+
+static struct PyModuleDef NRpyDNAcodemodule = {
+    PyModuleDef_HEAD_INIT,
+    "NRpyDNAcode", // Module name
+    NULL, // Module documentation
+    -1, // Size of per-interpreter state of the module
+    NRpyDNAcode_methods // Methods
+};
+
+PyMODINIT_FUNC PyInit_NRpyDNAcode(void)
 {
     PyObject* m;
 
-    m = PyModule_Create(&moduledef);
+	import_array(); 
+	if(PyErr_Occurred()) return NULL;
+    m = PyModule_Create(&NRpyDNAcodemodule);
     if (m == NULL)
         return NULL;
-
-    import_array();  // Necessary for initializing NumPy API
-
     return m;
 }

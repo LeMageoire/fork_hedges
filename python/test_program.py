@@ -62,7 +62,7 @@ code.setdnaconstraints(GC_window, max_GC, min_GC, max_hpoly_run) # set DNA const
 UseWiz = True
 if UseWiz :
     wizoffset = 0
-    wizfile = "WizardOfOzInEsperanto.txt"
+    wizfile = "data/WizardOfOzInEsperanto.txt"
     with open(wizfile, 'r') as myfile: wiztext = myfile.read()
     wizbytes = array([c for c in wiztext]).view(uint8)
     wizlen = len(wizbytes)
@@ -186,12 +186,12 @@ def createerrors(dnabag,srate,drate,irate) :
     return newbag
 
 ## DO THE TEST
-print "for each packet, these statistics are shown in two groups:"
-print "1.1 HEDGES decode failures, 1.2 HEDGES bytes thus declared as erasures"
-print "1.3 R-S total errors detected in packet, 1.4 max errors detected in a single decode"
-print "2.1 R-S reported as initially-uncorrected-but-recoverable total, 2.2 same, but max in single decode"
-print "2.3 R-S total error codes; if zero, then R-S corrected all errors"
-print "2.4 Actual number of byte errors when compared to known plaintext input"
+print ("for each packet, these statistics are shown in two groups:")
+print ("1.1 HEDGES decode failures, 1.2 HEDGES bytes thus declared as erasures")
+print ("1.3 R-S total errors detected in packet, 1.4 max errors detected in a single decode")
+print ("2.1 R-S reported as initially-uncorrected-but-recoverable total, 2.2 same, but max in single decode")
+print ("2.3 R-S total error codes; if zero, then R-S corrected all errors")
+print ("2.4 Actual number of byte errors when compared to known plaintext input")
 
 badpackets = 0
 Totalbads = zeros(8,dtype=int);

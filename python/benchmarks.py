@@ -5,6 +5,7 @@ import NRpyRS as RS
 import argparse
 import logging
 import pathlib
+import subprocess
 
 
 def read_file(file_path):
@@ -34,11 +35,68 @@ def decode(data, error_rate, iterations):
 
     return average_bit_rate
 
+#to be rewritten (the idea is to test all the sub error rates and then for every error rate add indels and test again)
+
+def update_err_arr(error_array, sub_only, should_stop):
+    """
+    this function should update the error_array with the new values of the error rate
+    """
+    if sub_only:
+        error_array[0] = 0.01
+        sub_only = False
+        #print("Substitution rate reset to 0.01")
+    else:
+        error_array[0] += 0.001
+        if error_array[0] > 0.021:
+            #print("Resetting substitution rate.")
+            sub_only = True
+            should_stop = True
+    return sub_only, should_stop
+
 def main():
+    """
+    this function has to call 100 times the test_program.py for every update of error_array or until stop condition
+
+    """
+
     base_path = pathlib.Path(__file__).parent.parent.resolve()
-    data = read_file(str(base_path / "data" / "D"))
-    average_bit_rate = decode(data, 0.02, 100)
-    print("Average bit rate: {}".format(average_bit_rate))
+    logger = logging.getLogger('HEDGES_benchmark_logger')
+    logger.setLevel(logging.DEBUG)  # Capture all levels of messages
+    console_handler = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+
+    error_array = [0.05, 0.0, 0.0]
+    should_stop = False
+    sub_only = True
+    first_run = True
+
+    logger.info('Starting benchmark')
+    while should_stop == False:
+        py_command = ['python', str(base_path / 'python' / 'test_program.py'), '-s', str(error_array[0]), '-d',str(error_array[1]), '-i',str(error_array[2])]
+        nb_success = 100
+        for i in range(100) :
+            process = subprocess.Popen(py_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            output,error = process.communicate()
+            process.wait()
+            #print(output)
+            #print(error)
+            if process.returncode != 0:
+                nb_success = nb_success - 1
+                print("Error in subprocess")
+                logger.error('Error in subprocess')
+            else :
+                print("Success in subprocess {}".format(i))
+                logger.info('Success in subprocess {}'.format(i))
+        #success_rate = ((float)nb_success / 100)*100
+        print("Success rate: {}% | s:{} d:{} i:{} |".format(nb_success, error_array[0], error_array[1], error_array[2]))
+        logger.info('Success rate: {}% | s:{} d:{} i:{} |'.format(nb_success, error_array[0], error_array[1], error_array[2]))
+        #sub_only, should_stop = update_err_arr(error_array, sub_only, should_stop)
+        should_stop = True
+        #update_coderate()
+    logger.info('Benchmark finished')
+
 
 if __name__ == '__main__':
     main()

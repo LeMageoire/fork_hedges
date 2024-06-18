@@ -7,3 +7,6 @@ cpp/src/NRpyRS.o
 .vscode
 .debug
 .journal
+.DS_Store
+.artefacts
+results

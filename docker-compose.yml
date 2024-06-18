@@ -1,0 +1,7 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    volumes:
+      - ./:/app  # Maps the host directory `./` to the container's `/app`

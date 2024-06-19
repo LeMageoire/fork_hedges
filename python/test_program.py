@@ -13,6 +13,7 @@
 from numpy import *
 import NRpyDNAcode as code
 import NRpyRS as RS
+import argparse
 
 # functions to create sequential packets from the plaintext source, and R-S protect them
 def createmesspacket(packno, strandsperpacket, bytesperstrand, messbytesperstrand, strandsperpacketmessage, strandIDbytes, getwiz, wiz_state) : # packno in range 0..255 with value 2 for strandIDbytes
@@ -167,10 +168,16 @@ def main():
     npackets is the number of packets to generate and test (255 strands each)
     totstrandlen is the total length of DNA strand (300 ?)
     """
+
+    parser = argparse.ArgumentParser(description="Provide substitution, deletion and insertion error rates to test the HEDGES error-correcting code for DNA storage.")
+    parser.add_argument('--sub', '-s', dest='e_sub', type=float, action='store', help="substitution error rate", required=True)
+    parser.add_argument('--del', '-d', dest='e_del', type=float, action='store', help="deletion error rate", required=True)
+    parser.add_argument('--ins', '-i', dest='e_ins', type=float, action='store', help="insertion error rate", required=True)
+    args = parser.parse_args()
     # Set parameters
     # DO NOT CHANGE THESE PARAMETERS because it will break the code
     coderates = array([NaN, 0.75, 0.6, 0.5, 1./3., 0.25, 1./6.])  # table of coderates 1..6
-    coderatecode = 1  # test this coderate in coderates table above
+    coderatecode = 3  # test this coderate in coderates table above
     #npackets = 20  # number of packets (of 255 strands each) to generate and test
     totstrandlen = 300  # total length of DNA strand
     strandIDbytes = 2  # ID bytes each strand for packet and sequence number
@@ -185,8 +192,10 @@ def main():
     #npackets = ceil(file_size_bytes / messbytesperpacket)
 
     # Error rates
-    (srate, drate, irate) = 1.0 * array([0.02, 0.00, 0.00])
-
+    (srate, drate, irate) = 1.0 * array([args.e_sub, args.e_del, args.e_ins])
+    #print("Substitution error rate: {}".format(srate))
+    #print("Deletion error rate: {}".format(drate))
+    #print("Insertion error rate: {}".format(irate))
     # DNA constraints
     max_hpoly_run = 4  # max homopolymer length allowed (0 for no constraint)
     GC_window = 12  # window for GC count (0 for no constraint)
@@ -293,8 +302,14 @@ def main():
             tot_detect,max_detect, tot_uncorrect,max_uncorrect,toterrcodes,badbytes)),
         print ("packet OK" if badbytes == 0 else "packet NOT ok")
         if badbytes : badpackets += 1
-    print ("all packets OK" if not badpackets else "some packets had errors!")
-    print ("TOT: (%4d %4d %4d %4d) (%4d %4d %4d %4d)" % tuple(Totalbads))
+    #print ("all packets OK" if not badpackets else "some packets had errors!")
+    #print ("TOT: (%4d %4d %4d %4d) (%4d %4d %4d %4d)" % tuple(Totalbads))
+    if badpackets :
+        print ("Some packets had errors")
+        exit(1)
+    else :
+        print ("All packets OK")
+        exit(0)
 
 if __name__ == "__main__":
     main()

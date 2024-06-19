@@ -6,6 +6,7 @@ import argparse
 import logging
 import pathlib
 import subprocess
+import os
 
 
 def read_file(file_path):
@@ -67,7 +68,7 @@ def main():
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
 
-    error_array = [0.05, 0.0, 0.0]
+    error_array = [0.01, 0.01, 0.01]
     should_stop = False
     sub_only = True
     first_run = True
@@ -80,8 +81,8 @@ def main():
             process = subprocess.Popen(py_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             output,error = process.communicate()
             process.wait()
-            #print(output)
-            #print(error)
+            print(output)
+            print(error)
             if process.returncode != 0:
                 nb_success = nb_success - 1
                 print("Error in subprocess")
@@ -89,6 +90,10 @@ def main():
             else :
                 print("Success in subprocess {}".format(i))
                 logger.info('Success in subprocess {}'.format(i))
+            try :
+                os.rename("results/00005_560x888_94.jxl", "results/00005_560x888_94_{}.jxl".format(i))
+            except :
+                print("No file to remove")
         #success_rate = ((float)nb_success / 100)*100
         print("Success rate: {}% | s:{} d:{} i:{} |".format(nb_success, error_array[0], error_array[1], error_array[2]))
         logger.info('Success rate: {}% | s:{} d:{} i:{} |'.format(nb_success, error_array[0], error_array[1], error_array[2]))

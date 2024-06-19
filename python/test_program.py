@@ -10,10 +10,16 @@
 # We encode a specified number of packets from known plaintext, create DNA errors, then
 # decode the DNA and compare.
 
+import numpy as np
 from numpy import *
+from PIL import Image
 import NRpyDNAcode as code
 import NRpyRS as RS
 import argparse
+
+
+def bytes_to_hex_string(byte_data):
+    return ''.join('{:02x}'.format(byte) for byte in byte_data)
 
 # functions to create sequential packets from the plaintext source, and R-S protect them
 def createmesspacket(packno, strandsperpacket, bytesperstrand, messbytesperstrand, strandsperpacketmessage, strandIDbytes, getwiz, wiz_state) : # packno in range 0..255 with value 2 for strandIDbytes
@@ -177,7 +183,7 @@ def main():
     # Set parameters
     # DO NOT CHANGE THESE PARAMETERS because it will break the code
     coderates = array([NaN, 0.75, 0.6, 0.5, 1./3., 0.25, 1./6.])  # table of coderates 1..6
-    coderatecode = 3  # test this coderate in coderates table above
+    coderatecode = 2  # test this coderate in coderates table above
     #npackets = 20  # number of packets (of 255 strands each) to generate and test
     totstrandlen = 300  # total length of DNA strand
     strandIDbytes = 2  # ID bytes each strand for packet and sequence number
@@ -187,7 +193,12 @@ def main():
     rightprimer = "TAGTGAGTGCGATTAAGCGTGTT"# 23 nt right primer for direct right appending (no revcomp)
 
 
-    file_size_bytes = 4878
+    #file_size_bytes = 4878
+    #file_size_bytes = 48247
+    #file_size_bytes = 39794
+    file_size_bytes = 145355
+    #file_size_bytes = 36125
+    #file_size_bytes = 6000
     #file_size_bytes = 15045
     #npackets = ceil(file_size_bytes / messbytesperpacket)
 
@@ -238,13 +249,19 @@ def main():
     UseWiz = True
     wiz_state = {'offset': 0, 'length': 0, 'bytes': None}
     if UseWiz:
-        wizfile = "data/D"
-        with open(wizfile, 'r') as myfile:
+        #wizfile = "data/D"
+        wizfile = "data/00005_560x888_94.jxl"
+        #wizfile = "data/el.jpg"
+        with open(wizfile, 'rb') as myfile:
             wiztext = myfile.read()
+        #with Image.open(wizfile) as img:
+        #    wiztext = np.array(img)
         wiz_state['bytes'] = array([c for c in wiztext]).view(uint8)
         wiz_state['length'] = len(wiz_state['bytes'])
+        print("Read {} bytes from {}".format(wiz_state['length'], wizfile))
         def getwiz(n, wiz_state):
             if wiz_state['offset'] + n > wiz_state['length']:
+                print("Warning: read past end of file")
                 remaining = wiz_state['length'] - wiz_state['offset']
                 result = wiz_state['bytes'][wiz_state['offset']:wiz_state['length']]
                 # Fill the rest with zeros (or another stop code) to denote no more data
@@ -276,6 +293,7 @@ def main():
     for ipacket in range(npackets) :
         # encode
         messpack, messplain =  createmesspacket(ipacket, strandsperpacket, bytesperstrand, messbytesperstrand, strandsperpacketmessage, strandIDbytes, getwiz, wiz_state) # plaintext to message packet
+        print("Input Data (Hex):", bytes_to_hex_string(messplain))
         #print_strand_data_char(messpack, strandsperpacket, messbytesperstrand, strandIDbytes)
         rspack = protectmesspacket(messpack, strandsperpacket, messbytesperstrand, strandIDbytes) # Reed-Solomon protect the packet
         dnapack = zeros([strandsperpacket,totstrandlen],dtype=uint8)
@@ -290,11 +308,15 @@ def main():
         # decode
         (dpacket,epacket,baddecodes,erasures) = dnatomess(obspack, strandsperpacket, bytesperstrand, messbytesperstrand) # decode the strands
         (cpacket,tot_detect,tot_uncorrect,max_detect,max_uncorrect,toterrcodes) = correctmesspacket(dpacket,epacket, strandsperpacket, messbytesperstrand, strandIDbytes)
-    
+
         # check against ground truth
         messcheck = extractplaintext(cpacket, strandsperpacketmessage, messbytesperstrand, strandIDbytes)
-        with open("results/results.txt", "wb") as file:
-            file.write(messcheck)
+        print("Decoded Data (Hex):", bytes_to_hex_string(messcheck))
+        with open("results/00005_560x888_94.jxl", "ab") as file:
+            file.write(messcheck.tobytes())
+        #640x360
+        #image = Image.fromarray(messcheck.reshape(360, 640, 3))
+        #image.save("results/el.jpg")
         badbytes = count_nonzero(messplain-messcheck)
         # print summary line
         Totalbads += array([ baddecodes,erasures,tot_detect,max_detect,tot_uncorrect,max_uncorrect,toterrcodes,badbytes])

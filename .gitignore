@@ -10,3 +10,4 @@ cpp/src/NRpyRS.o
 .DS_Store
 .artefacts
 results
+data/JPEG_DNA_Dataset/*

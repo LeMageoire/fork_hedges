@@ -183,7 +183,7 @@ def main():
     # Set parameters
     # DO NOT CHANGE THESE PARAMETERS because it will break the code
     coderates = array([NaN, 0.75, 0.6, 0.5, 1./3., 0.25, 1./6.])  # table of coderates 1..6
-    coderatecode = 2  # test this coderate in coderates table above
+    coderatecode = 3  # test this coderate in coderates table above
     #npackets = 20  # number of packets (of 255 strands each) to generate and test
     totstrandlen = 300  # total length of DNA strand
     strandIDbytes = 2  # ID bytes each strand for packet and sequence number
@@ -196,11 +196,13 @@ def main():
     #file_size_bytes = 4878
     #file_size_bytes = 48247
     #file_size_bytes = 39794
-    file_size_bytes = 145355
+    #file_size_bytes = 145355
+    file_size_bytes = 1510896
     #file_size_bytes = 36125
     #file_size_bytes = 6000
     #file_size_bytes = 15045
-    #npackets = ceil(file_size_bytes / messbytesperpacket)
+    #print(npackets = ceil(file_size_bytes / messbytesperpacket)
+
 
     # Error rates
     (srate, drate, irate) = 1.0 * array([args.e_sub, args.e_del, args.e_ins])
@@ -208,9 +210,16 @@ def main():
     #print("Deletion error rate: {}".format(drate))
     #print("Insertion error rate: {}".format(irate))
     # DNA constraints
-    max_hpoly_run = 4  # max homopolymer length allowed (0 for no constraint)
-    GC_window = 12  # window for GC count (0 for no constraint)
-    max_GC = 8  # max GC allowed in window (0 for no constraint)
+
+    # Set DNA constraints
+    # tweaks to 3 homopolymer
+    # 
+    # max_hpoly_run = 4  # max homopolymer length allowed (0 for no constraint)
+    # GC_window = 12  # window for GC count (0 for no constraint)
+    # max_GC = 8  # max GC allowed in window (0 for no constraint)
+    max_hpoly_run = 4
+    GC_window = 12 
+    max_GC = 8
     min_GC = GC_window - max_GC
 
     # Set additional derived parameters
@@ -250,7 +259,8 @@ def main():
     wiz_state = {'offset': 0, 'length': 0, 'bytes': None}
     if UseWiz:
         #wizfile = "data/D"
-        wizfile = "data/00005_560x888_94.jxl"
+        #wizfile = "data/00005_560x888_94.jxl"
+        wizfile = "data/JPEG_DNA_Dataset/04-2023/uncompressed/00001_1192x832.png"
         #wizfile = "data/el.jpg"
         with open(wizfile, 'rb') as myfile:
             wiztext = myfile.read()
@@ -312,7 +322,7 @@ def main():
         # check against ground truth
         messcheck = extractplaintext(cpacket, strandsperpacketmessage, messbytesperstrand, strandIDbytes)
         print("Decoded Data (Hex):", bytes_to_hex_string(messcheck))
-        with open("results/00005_560x888_94.jxl", "ab") as file:
+        with open("results/img_1/img_1.png", "ab") as file:
             file.write(messcheck.tobytes())
         #640x360
         #image = Image.fromarray(messcheck.reshape(360, 640, 3))

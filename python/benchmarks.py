@@ -2,11 +2,11 @@ import numpy as np
 import NRpyDNAcode as code
 import NRpyRS as RS
 
+import os
 import argparse
 import logging
 import pathlib
 import subprocess
-import os
 
 
 def read_file(file_path):
@@ -59,6 +59,31 @@ def main():
     this function has to call 100 times the test_program.py for every update of error_array or until stop condition
 
     """
+    args = argparse.ArgumentParser(description='Benchmark for HEDGES, a DNA storage encoder/decoder')
+    args.add_argument('-s', '--substitution', type=float, help='Substitution error rate')
+    args.add_argument('-d', '--deletion', type=float, help='Deletion error rate')
+    args.add_argument('-i', '--insertion', type=float, help='Insertion error rate')
+    args.add_argument('-r', type=int, default=100, help='Number of iterations')
+    args.add_argument('-t', '--target', type =str, help='input file path')
+    args.add_argument('-o', '--output', type =str, default = "./results/default", help='folder_path + file path')
+    args = args.parse_args()
+
+    # Check if the input file can be opened
+    try:
+        with open(args.target, 'r') as f:
+            pass  # Just checking if the file can be opened
+    except IOError:
+        logger.error(f"Unable to open the input file: {args.target}")
+        return
+    
+    # Check if the output file can be opened (create the folder if it doesn't exist)
+    
+    output_dir = pathlib.Path(args.output).parent
+    try:
+        os.makedirs(output_dir, exist_ok=True)
+    except IOError:
+        logger.error(f"Unable to open the output folder: {args.output}")
+        return
 
     base_path = pathlib.Path(__file__).parent.parent.resolve()
     logger = logging.getLogger('HEDGES_benchmark_logger')
@@ -68,15 +93,21 @@ def main():
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
 
-    error_array = [0.01, 0.01, 0.01]
+    if args.substitution is None or args.deletion is None or args.insertion is None:
+        error_array = [0.017, 0.017, 0.017] # Manual Configuration
+    else :
+        error_array = [args.substitution, args.deletion, args.insertion]
     should_stop = False
     sub_only = True
     first_run = True
 
     logger.info('Starting benchmark')
     while should_stop == False:
-        py_command = ['python', str(base_path / 'python' / 'test_program.py'), '-s', str(error_array[0]), '-d',str(error_array[1]), '-i',str(error_array[2])]
+        py_command = ['python', str(base_path / 'python' / 'test_program.py'), '-s', str(error_array[0]), '-d',str(error_array[1]), '-i',str(error_array[2], '-r', str(args.r), '-t', str(args.target), '-o', str(args.output)]
         nb_success = 100
+        output_path = Path(args.output)
+        base_name = output_path.stem
+        extension = output_path.suffix
         for i in range(100) :
             process = subprocess.Popen(py_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             output,error = process.communicate()
@@ -91,7 +122,8 @@ def main():
                 print("Success in subprocess {}".format(i))
                 logger.info('Success in subprocess {}'.format(i))
             try :
-                os.rename("results/00005_560x888_94.jxl", "results/00005_560x888_94_{}.jxl".format(i))
+                new_file_name = "{}{}_{}{}".format(output_path, base_name, i, extension)
+                os.rename(args.output, new_file_name)
             except :
                 print("No file to remove")
         #success_rate = ((float)nb_success / 100)*100

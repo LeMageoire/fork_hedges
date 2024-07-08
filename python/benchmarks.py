@@ -63,7 +63,7 @@ def main():
     args.add_argument('-s', '--substitution', type=float, help='Substitution error rate')
     args.add_argument('-d', '--deletion', type=float, help='Deletion error rate')
     args.add_argument('-i', '--insertion', type=float, help='Insertion error rate')
-    args.add_argument('-r', type=int, default=100, help='Number of iterations')
+    args.add_argument('-r', '--repetition', type=int, default=100, help='Number of iterations')
     args.add_argument('-t', '--target', type =str, help='input file path')
     args.add_argument('-o', '--output', type =str, default = "./results/default", help='folder_path + file path')
     args = args.parse_args()
@@ -73,19 +73,24 @@ def main():
         with open(args.target, 'r') as f:
             pass  # Just checking if the file can be opened
     except IOError:
-        logger.error(f"Unable to open the input file: {args.target}")
+        logger.error("Unable to open the input file: {}".format(args.target))
         return
     
     # Check if the output file can be opened (create the folder if it doesn't exist)
     
-    output_dir = pathlib.Path(args.output).parent
-    try:
-        os.makedirs(output_dir, exist_ok=True)
-    except IOError:
-        logger.error(f"Unable to open the output folder: {args.output}")
-        return
+    #output_dir = pathlib.Path(args.output).parent
+    output_dir = os.path.dirname(args.output)
+    if not os.path.exists(output_dir):
+        try:
+            os.makedirs(output_dir)
+        except OSError as e:
+            if e.errno != e.errno.EEXIST:
+                logger.error("Unable to open the output folder: {}".format(output_dir))
+                return
 
+    # pathlib is python 3.4+ only
     base_path = pathlib.Path(__file__).parent.parent.resolve()
+    base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
     logger = logging.getLogger('HEDGES_benchmark_logger')
     logger.setLevel(logging.DEBUG)  # Capture all levels of messages
     console_handler = logging.StreamHandler()
@@ -103,12 +108,11 @@ def main():
 
     logger.info('Starting benchmark')
     while should_stop == False:
-        py_command = ['python', str(base_path / 'python' / 'test_program.py'), '-s', str(error_array[0]), '-d',str(error_array[1]), '-i',str(error_array[2], '-r', str(args.r), '-t', str(args.target), '-o', str(args.output)]
-        nb_success = 100
-        output_path = Path(args.output)
-        base_name = output_path.stem
-        extension = output_path.suffix
-        for i in range(100) :
+        py_command = ['python', os.path.join(base_path, 'python', 'test_program.py'), '-s', str(error_array[0]), '-d', str(error_array[1]), '-i', str(error_array[2]), '-r', str(args.repetition), '-t', str(args.target), '-o', str(args.output)]
+        output_path = args.output
+        base_name = os.path.splitext(os.path.basename(args.target))[0]
+        extension = os.path.splitext(os.path.basename(args.target))[1]
+        for i in range(args.repetition) :
             process = subprocess.Popen(py_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             output,error = process.communicate()
             process.wait()
@@ -122,7 +126,9 @@ def main():
                 print("Success in subprocess {}".format(i))
                 logger.info('Success in subprocess {}'.format(i))
             try :
-                new_file_name = "{}{}_{}{}".format(output_path, base_name, i, extension)
+                bn, fe = os.path.splitext(args.output)
+                new_file_name = "{}_{}{}".format(bn, i, fe)
+                print("nfn : {}".format(new_file_name))
                 os.rename(args.output, new_file_name)
             except :
                 print("No file to remove")

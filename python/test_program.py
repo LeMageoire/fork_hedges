@@ -16,7 +16,8 @@ from PIL import Image
 import NRpyDNAcode as code
 import NRpyRS as RS
 import argparse
-
+import pathlib
+import os
 
 def bytes_to_hex_string(byte_data):
     return ''.join('{:02x}'.format(byte) for byte in byte_data)
@@ -168,6 +169,13 @@ def print_all(strandsperpacketcheck, strandsperpacket, file_size_bytes, totstran
     print("-------------------")
 
 
+def compute_bytesize_compat(file_path):
+    return os.path.getsize(file_path)
+
+def compute_bytesize(file_path):
+    return pathlib.Path(file_path).stat().st_size
+
+
 def main():   
     """
     coderatecode is used to select the code rate from the table of coderates (for ?)
@@ -179,6 +187,9 @@ def main():
     parser.add_argument('--sub', '-s', dest='e_sub', type=float, action='store', help="substitution error rate", required=True)
     parser.add_argument('--del', '-d', dest='e_del', type=float, action='store', help="deletion error rate", required=True)
     parser.add_argument('--ins', '-i', dest='e_ins', type=float, action='store', help="insertion error rate", required=True)
+    parser.add_argument('-r', type=int, default=100, help='Number of iterations')
+    parser.add_argument('-t', '--target', type =str, help='input file path')
+    parser.add_argument('-o', '--output', type =str, default = "./results/default", help='folder_path + file path')
     args = parser.parse_args()
     # Set parameters
     # DO NOT CHANGE THESE PARAMETERS because it will break the code
@@ -192,31 +203,14 @@ def main():
     leftprimer = "TCGAAGTCAGCGTGTATTGTATG" # 23 nt left primer
     rightprimer = "TAGTGAGTGCGATTAAGCGTGTT"# 23 nt right primer for direct right appending (no revcomp)
 
+    if args.target is not None:
+        file_size_bytes = compute_bytesize(args.target)
+    else:
+        file_size_bytes = 4878 # manual mode
 
-    #file_size_bytes = 4878
-    #file_size_bytes = 48247
-    #file_size_bytes = 39794
-    #file_size_bytes = 145355
-    file_size_bytes = 1510896
-    #file_size_bytes = 36125
-    #file_size_bytes = 6000
-    #file_size_bytes = 15045
-    #print(npackets = ceil(file_size_bytes / messbytesperpacket)
-
-
+    print("File size: {} bytes".format(file_size_bytes))
     # Error rates
     (srate, drate, irate) = 1.0 * array([args.e_sub, args.e_del, args.e_ins])
-    #print("Substitution error rate: {}".format(srate))
-    #print("Deletion error rate: {}".format(drate))
-    #print("Insertion error rate: {}".format(irate))
-    # DNA constraints
-
-    # Set DNA constraints
-    # tweaks to 3 homopolymer
-    # 
-    # max_hpoly_run = 4  # max homopolymer length allowed (0 for no constraint)
-    # GC_window = 12  # window for GC count (0 for no constraint)
-    # max_GC = 8  # max GC allowed in window (0 for no constraint)
     max_hpoly_run = 4
     GC_window = 12 
     max_GC = 8
@@ -258,10 +252,7 @@ def main():
     UseWiz = True
     wiz_state = {'offset': 0, 'length': 0, 'bytes': None}
     if UseWiz:
-        #wizfile = "data/D"
-        #wizfile = "data/00005_560x888_94.jxl"
-        wizfile = "data/JPEG_DNA_Dataset/04-2023/uncompressed/00001_1192x832.png"
-        #wizfile = "data/el.jpg"
+        wizfile = args.target
         with open(wizfile, 'rb') as myfile:
             wiztext = myfile.read()
         #with Image.open(wizfile) as img:
@@ -322,11 +313,9 @@ def main():
         # check against ground truth
         messcheck = extractplaintext(cpacket, strandsperpacketmessage, messbytesperstrand, strandIDbytes)
         print("Decoded Data (Hex):", bytes_to_hex_string(messcheck))
-        with open("results/img_1/img_1.png", "ab") as file:
+        
+        with open(args.output, 'ab') as file:
             file.write(messcheck.tobytes())
-        #640x360
-        #image = Image.fromarray(messcheck.reshape(360, 640, 3))
-        #image.save("results/el.jpg")
         badbytes = count_nonzero(messplain-messcheck)
         # print summary line
         Totalbads += array([ baddecodes,erasures,tot_detect,max_detect,tot_uncorrect,max_uncorrect,toterrcodes,badbytes])
